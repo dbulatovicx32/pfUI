@@ -825,8 +825,8 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
         "frFR:French",
         "koKR:Korean",
         "ruRU:Russian",
-        "zhCN:Chinese (simplified; China)",
-        "zhTW:Chinese (traditional; Taiwan)",
+        "zhCN:Chinese (Simplified)",
+        "zhTW:Chinese (Traditional)",
         -- http://wowprogramming.com/docs/api/GetLocale
       },
       ["fonts"] = {
@@ -1413,9 +1413,18 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
         if C.global.profile and pfUI_profiles[C.global.profile] then
           CreateQuestionDialog(T["Load profile"] .. " '|cff33ffcc" .. C.global.profile .. "|r'?", function()
             local selp = C.global.profile
+            local rchat = C.chat.right.enable
+
+            -- load profile
             _G["pfUI_config"] = CopyTable(pfUI_profiles[C.global.profile])
+
+            -- restore values
+            pfUI:UpdateConfig("global", nil, "profile", selp)
+            pfUI:UpdateConfig("chat", "right", "enable", rchat)
+
+            -- add default values
             pfUI:LoadConfig()
-            C.global.profile = selp
+
             ReloadUI()
           end)
         end
@@ -1607,7 +1616,8 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
       CreateConfig(nil, T["Always Use 2D Portraits"], C.unitframes, "always2dportrait", "checkbox")
       CreateConfig(nil, T["Enable 2D Portraits As Fallback"], C.unitframes, "portraittexture", "checkbox")
       CreateConfig(nil, T["Unit Frame Layout"], C.unitframes, "layout", "dropdown", pfUI.gui.dropdowns.uf_layout)
-      CreateConfig(nil, T["Combopoint Size"], C.unitframes, "combosize")
+      CreateConfig(nil, T["Combopoint Width"], C.unitframes, "combowidth")
+      CreateConfig(nil, T["Combopoint Height"], C.unitframes, "comboheight")
       CreateConfig(nil, T["Show Resting"], C.unitframes.player, "showRest", "checkbox")
       CreateConfig(nil, T["Enable Energy Ticks"], C.unitframes.player, "energy", "checkbox")
       CreateConfig(nil, T["Enable Mana Ticks"], C.unitframes.player, "manatick", "checkbox")
@@ -1729,6 +1739,10 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
         CreateConfig(U[c], T["Power Bar Texture"], C.unitframes[c], "pbartexture", "dropdown", pfUI.gui.dropdowns.uf_bartexture)
         CreateConfig(U[c], T["UnitFrame Spacing"], C.unitframes[c], "pspace")
         CreateConfig(U[c], T["Show PvP-Flag"], C.unitframes[c], "showPVP", "checkbox")
+        CreateConfig(U[c], T["PVP Flag Size"], C.unitframes[c], "pvpiconsize")
+        CreateConfig(U[c], T["PvP Flag Position"], C.unitframes[c], "pvpiconalign", "dropdown", pfUI.gui.dropdowns.positions)
+        CreateConfig(U[c], T["PvP Flag X-Offset"], C.unitframes[c], "pvpiconoffx")
+        CreateConfig(U[c], T["PvP Flag Y-Offset"], C.unitframes[c], "pvpiconoffy")
         CreateConfig(U[c], T["Show Loot Icon"], C.unitframes[c], "looticon", "checkbox")
         CreateConfig(U[c], T["Show Leader Icon"], C.unitframes[c], "leadericon", "checkbox")
         if c == "pet" then
@@ -1736,11 +1750,18 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
           CreateConfig(U[c], T["Happiness Icon Size"], C.unitframes[c], "happinesssize")
         end
         CreateConfig(U[c], T["Show Raid Mark"], C.unitframes[c], "raidicon", "checkbox")
+        CreateConfig(U[c], T["Raid Mark Position"], C.unitframes[c], "raidiconalign", "dropdown", pfUI.gui.dropdowns.positions)
+        CreateConfig(U[c], T["Raid Mark X-Offset"], C.unitframes[c], "raidiconoffx")
+        CreateConfig(U[c], T["Raid Mark Y-Offset"], C.unitframes[c], "raidiconoffy")
         CreateConfig(U[c], T["Raid Mark Size"], C.unitframes[c], "raidiconsize")
         CreateConfig(U[c], T["Heal Color"], C.unitframes[c], "healcolor", "color")
         CreateConfig(U[c], T["Display Overheal"], C.unitframes[c], "overhealperc", "dropdown", pfUI.gui.dropdowns.uf_overheal)
 
         if c == "raid" then
+          CreateConfig(U["raid"], T["Display Raid Group Label"], C.unitframes[c], "raidgrouplabel", "checkbox")
+          CreateConfig(U["raid"], T["Group Label X-Offset"], C.unitframes[c], "grouplabelxoff")
+          CreateConfig(U["raid"], T["Group Label Y-Offset"], C.unitframes[c], "grouplabelyoff")
+
           CreateConfig(U[c], T["Layout"], nil, nil, "header")
           CreateConfig(U["raid"], T["Raid Padding"], C.unitframes[c], "raidpadding")
           CreateConfig(U["raid"], T["Raid Layout"], C.unitframes[c], "raidlayout", "dropdown", pfUI.gui.dropdowns.uf_raidlayout)
@@ -1793,6 +1814,22 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
         CreateConfig(U[c], T["Show Timer Text"], C.unitframes[c], "cooldown_text", "checkbox")
         CreateConfig(U[c], T["Show Timer Animation"], C.unitframes[c], "cooldown_anim", "checkbox")
 
+        CreateConfig(U[c], T["Buffs"], nil, nil, "header")
+        CreateConfig(U[c], T["Buff Position"], C.unitframes[c], "buffs", "dropdown", pfUI.gui.dropdowns.uf_buff_position)
+        CreateConfig(U[c], T["Buff Size"], C.unitframes[c], "buffsize")
+        CreateConfig(U[c], T["Buff Limit"], C.unitframes[c], "bufflimit")
+        CreateConfig(U[c], T["Buffs Per Row"], C.unitframes[c], "buffperrow")
+
+        CreateConfig(U[c], T["Debuffs"], nil, nil, "header")
+        CreateConfig(U[c], T["Debuff Position"], C.unitframes[c], "debuffs", "dropdown", pfUI.gui.dropdowns.uf_buff_position)
+        CreateConfig(U[c], T["Debuff Size"], C.unitframes[c], "debuffsize")
+        CreateConfig(U[c], T["Debuff Limit"], C.unitframes[c], "debufflimit")
+        CreateConfig(U[c], T["Debuffs Per Row"], C.unitframes[c], "debuffperrow")
+
+        if c ~= "player" then
+          CreateConfig(U[c], T["Only Show Own Debuffs (|cffffaaaaExperimental|r)"], C.unitframes[c], "selfdebuff", "checkbox")
+        end
+
         CreateConfig(U[c], T["Combat/Aggro Indicators"], nil, nil, "header")
         CreateConfig(U[c], T["Display Aggro Indicator"], C.unitframes[c], "squareaggro", "checkbox")
         CreateConfig(U[c], T["Display Combat Indicator"], C.unitframes[c], "squarecombat", "checkbox")
@@ -1819,18 +1856,6 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
         CreateConfig(U[c], T["Only Class Dispellable"], C.unitframes[c], "debuff_ind_class", "checkbox")
         CreateConfig(U[c], T["Indicator Position"], C.unitframes[c], "debuff_ind_pos", "dropdown", pfUI.gui.dropdowns.positions)
         CreateConfig(U[c], T["Indicator Size"], C.unitframes[c], "debuff_ind_size", "dropdown", pfUI.gui.dropdowns.uf_debuff_indicator_size)
-
-        CreateConfig(U[c], T["Buffs"], nil, nil, "header")
-        CreateConfig(U[c], T["Buff Position"], C.unitframes[c], "buffs", "dropdown", pfUI.gui.dropdowns.uf_buff_position)
-        CreateConfig(U[c], T["Buff Size"], C.unitframes[c], "buffsize")
-        CreateConfig(U[c], T["Buff Limit"], C.unitframes[c], "bufflimit")
-        CreateConfig(U[c], T["Buffs Per Row"], C.unitframes[c], "buffperrow")
-
-        CreateConfig(U[c], T["Debuffs"], nil, nil, "header")
-        CreateConfig(U[c], T["Debuff Position"], C.unitframes[c], "debuffs", "dropdown", pfUI.gui.dropdowns.uf_buff_position)
-        CreateConfig(U[c], T["Debuff Size"], C.unitframes[c], "debuffsize")
-        CreateConfig(U[c], T["Debuff Limit"], C.unitframes[c], "debufflimit")
-        CreateConfig(U[c], T["Debuffs Per Row"], C.unitframes[c], "debuffperrow")
 
         CreateConfig(U[c], T["Overwrite Fonts"], nil, nil, "header")
         CreateConfig(U[c], T["Use Custom Font Settings"], C.unitframes[c], "customfont", "checkbox")
@@ -1883,6 +1908,7 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
 
     CreateGUIEntry(T["Minimap"], T["Minimap"], function()
       CreateConfig(U["minimap"], T["Minimap Size (|cffffaaaaExperimental|r)"], C.appearance.minimap, "size")
+      CreateConfig(U["minimap"], T["Minimap Player Arrow Scale"], C.appearance.minimap, "arrowscale")
       CreateConfig(nil, T["Zone Text On Minimap"], C.appearance.minimap, "zonetext", "dropdown", pfUI.gui.dropdowns.minimap_zone_visibility)
       CreateConfig(nil, T["Coordinates On Minimap"], C.appearance.minimap, "coordstext", "dropdown", pfUI.gui.dropdowns.minimap_cords_visibility)
       CreateConfig(nil, T["Coordinates Location"], C.appearance.minimap, "coordsloc", "dropdown", pfUI.gui.dropdowns.minimap_cords_position)
@@ -1973,6 +1999,7 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
       CreateConfig(nil, T["Color Debuff Stacks"], C.buffbar.tdebuff, "colorstacks", "checkbox")
       CreateConfig(nil, T["Buffbar Width"], C.buffbar.tdebuff, "width")
       CreateConfig(nil, T["Buffbar Height"], C.buffbar.tdebuff, "height")
+      CreateConfig(nil, T["Only Show Own Debuffs (|cffffaaaaExperimental|r)"], C.buffbar.tdebuff, "selfdebuff", "checkbox")
       CreateConfig(nil, T["Filter Mode"], C.buffbar.tdebuff, "filter", "dropdown", pfUI.gui.dropdowns.buffbarfilter)
       CreateConfig(nil, T["Time Threshold"], C.buffbar.tdebuff, "threshold")
       CreateConfig(nil, T["Whitelist"], C.buffbar.tdebuff, "whitelist", "list")
@@ -2238,7 +2265,7 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
       CreateConfig(nil, T["Generate Playerlinks"], C.chat.text, "playerlinks", "checkbox")
       CreateConfig(nil, T["Enable URL Detection"], C.chat.text, "detecturl", "checkbox")
       CreateConfig(nil, T["Enable Class Colors"], C.chat.text, "classcolor", "checkbox")
-      CreateConfig(nil, T["Who Search Unknown Classes"], C.chat.text, "whosearchunknown", "checkbox")
+      CreateConfig(nil, T["Who Search Unknown Classes (|cffffaaaaExperimental|r)"], C.chat.text, "whosearchunknown", "checkbox")
       CreateConfig(nil, T["Colorize Unknown Classes"], C.chat.text, "tintunknown", "checkbox")
       CreateConfig(nil, T["Unknown Class Color"], C.chat.text, "unknowncolor", "color")
       CreateConfig(nil, T["Left Chat Width"], C.chat.left, "width")
@@ -2309,6 +2336,7 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
       CreateConfig(U["nameplates"], T["Debuff Icon Size"], C.nameplates, "debuffsize")
       CreateConfig(U["nameplates"], T["Estimate Debuffs"], C.nameplates, "guessdebuffs", "checkbox")
       CreateConfig(U["nameplates"], T["Show Debuff Stacks"], C.nameplates.debuffs, "showstacks", "checkbox")
+      CreateConfig(U["nameplates"], T["Only Show Own Debuffs (|cffffaaaaExperimental|r)"], C.nameplates, "selfdebuff", "checkbox")
       CreateConfig(U["nameplates"], T["Filter Mode"], C.nameplates.debuffs, "filter", "dropdown", pfUI.gui.dropdowns.buffbarfilter)
       CreateConfig(U["nameplates"], T["Blacklist"], C.nameplates.debuffs, "blacklist", "list")
       CreateConfig(U["nameplates"], T["Whitelist"], C.nameplates.debuffs, "whitelist", "list")
@@ -2343,13 +2371,16 @@ pfUI:RegisterModule("gui", "vanilla:tbc", function ()
       CreateConfig(U["nameplates"], T["Overwrite Border Color With Combat State"], C.nameplates, "outcombatstate", "checkbox")
       CreateConfig(U["nameplates"], T["Overwrite Health Color With Combat State"], C.nameplates, "barcombatstate", "checkbox")
       CreateConfig(U["nameplates"], T["Overwrite If Unit Is Attacking You"], C.nameplates, "ccombatthreat", "checkbox")
+      CreateConfig(U["nameplates"], T["Overwrite If Unit Is Attacking Off-Tank"], C.nameplates, "ccombatofftank", "checkbox")
       CreateConfig(U["nameplates"], T["Overwrite If Unit Is Attacking Others"], C.nameplates, "ccombatnothreat", "checkbox")
       CreateConfig(U["nameplates"], T["Overwrite If Unit Is Attacking No One"], C.nameplates, "ccombatstun", "checkbox")
       CreateConfig(U["nameplates"], T["Overwrite If Unit Is Casting"], C.nameplates, "ccombatcasting", "checkbox")
       CreateConfig(U["nameplates"], T["Unit Is Attacking You Color"], C.nameplates, "combatthreat", "color")
+      CreateConfig(U["nameplates"], T["Unit Is Attacking Off-Tank Color"], C.nameplates, "combatofftank", "color")
       CreateConfig(U["nameplates"], T["Unit Is Attacking Others Color"], C.nameplates, "combatnothreat", "color")
       CreateConfig(U["nameplates"], T["Unit Is Attacking No One Color"], C.nameplates, "combatstun", "color")
       CreateConfig(U["nameplates"], T["Unit Is Casting Color"], C.nameplates, "combatcasting", "color")
+      CreateConfig(U["nameplates"], T["Off-Tank Names"], C.nameplates, "combatofftanks", "list")
     end)
 
     CreateGUIEntry(T["Thirdparty"], T["Integrations"], function()
